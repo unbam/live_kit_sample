@@ -49,7 +49,7 @@ export const sendMessage = functionsV2.https.onRequest(
     const isCall = (request.query.isCall as string) == "1" ? true : false;
     const toIOS = (request.query.toIOS as string) == "1" ? true : false;
     const token = toIOS ? (process.env.TOKEN_IOS as string) : (process.env.TOKEN_ANDROID as string);
-    const callerUserName = callerUserId == "1" ? "ABC Inc." : "XYZ Inc.";
+    const callerUserName = toIOS ? "ABC Inc." : "XYZ Inc.";
     const callerIconUrl =
       "https://img.icons8.com/ios-filled/50/user-male-circle.png";
 
