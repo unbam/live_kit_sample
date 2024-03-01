@@ -199,6 +199,7 @@ class CallService {
           // 通話拒否
           case Event.actionCallDecline:
             print('FlutterCallkitIncoming.onEvent: ----- 通話拒否 ----- ');
+            await callDecline();
             break;
           // 通話終了
           case Event.actionCallEnded:
@@ -315,6 +316,53 @@ class CallService {
       _listener?.dispose();
       _room = null;
     });
+  }
+
+  Future<void> callDecline() async {
+    try {
+      _room = Room();
+      if (_listener != null) {
+        _listener?.dispose();
+      }
+      _listener = _room?.createListener();
+      onRoomEventLisner();
+
+      // LiveKitのRoomOptions
+      const roomOptions = RoomOptions(
+        adaptiveStream: true,
+        dynacast: true,
+      );
+
+      // LiveKitのトークン発行
+      final response = await http.get(Uri.parse(
+          '${dotenv.env['CLOUD_FUNCTIONS_URL']}/createToken?userId=$_userId&roomId=$_currentCallId'));
+      final token = response.body.trim();
+      _audioTrack ??= await LocalAudioTrack.create(
+        const AudioCaptureOptions(),
+      );
+
+      await _room!.connect(
+        '${dotenv.env['LIVEKIT_URL']}',
+        token,
+        roomOptions: roomOptions,
+        fastConnectOptions: FastConnectOptions(
+          microphone: TrackOption(track: _audioTrack),
+        ),
+      );
+
+      // await _room!.localParticipant?.setMicrophoneEnabled(false);
+      // _room!.setSpeakerOn(false);
+
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        await _room?.disconnect().then((value) {
+          _listener?.dispose();
+          _room = null;
+          _audioTrack = null;
+        });
+      });
+    } catch (e) {
+      print('callDecline: <error> $e');
+    }
   }
 
   void onRoomEventLisner() {
